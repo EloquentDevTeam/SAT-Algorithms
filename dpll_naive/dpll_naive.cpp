@@ -15,6 +15,7 @@
 #include <chrono>
 #include <stack>
 
+
 using ll = long long;
 using Literal = long long;
 using Clause = std::unordered_set<Literal>;

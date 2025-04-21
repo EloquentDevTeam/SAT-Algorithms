@@ -5,7 +5,9 @@
 #include <sstream>
 #include <cstdint>
 #include <vector>
-#include <optional>
+#include <chrono>
+#include <memutils.h>
+
 #pragma GCC optimize("O3,fast-math,unroll-loops")
 
 
@@ -117,8 +119,11 @@ int main(int argc, const char* argv[]) {
     std::ofstream g(argv[2]);
     g<<"Start SAT. Result: ";
     g.flush();
-
-    switch (resolution(clauses)) {
+    auto start = std::chrono::high_resolution_clock::now();
+    auto result = resolution(clauses);
+    auto end = std::chrono::high_resolution_clock::now();
+    size_t peakSize    = getPeakRSS( );
+    switch (result) {
         case SatState::SAT:
             g<<"SAT";
             break;
@@ -130,7 +135,13 @@ int main(int argc, const char* argv[]) {
             break;
     }
     g<<'\n';
-    g<<"Clauze generate: "<<clauses.size();
+    g<<"Clauze generate: "<<clauses.size()<<'\n';
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
+    g<<"Timp de execuție: "<<elapsed<<"μs"<<'\n';
+    g<<"Memorie consumată: "<< peakSize<<"B."<<'\n';
+    g<<"Memorie consumată: "<< peakSize/1024<<"KB."<<'\n';
+    g<<"Memorie consumată: "<< peakSize/1024/1024<<"MB."<<'\n';
+    g<<"Memorie consumată: "<< peakSize/1024/1024/1024<<"GB."<<'\n';
     g.close();
     return 0;
 }

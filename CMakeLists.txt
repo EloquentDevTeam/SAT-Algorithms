@@ -8,7 +8,8 @@ option(ENABLE_DP_NAIVE "Whether to build the Davis-Putnamm algorithm (naive appr
 option(ENABLE_DPLL_NAIVE "Whether to build the Davis–Putnam–Logemann–Loveland algorithm (naive approach)" YES)
 project(sat-algorithms)
 
-
+add_subdirectory(utilities)
+target_sources(memutils PUBLIC FILE_SET HEADERS FILES BASE_DIRS utilities ${CMAKE_CURRENT_BINARY_DIR}/utilities)
 if (ENABLE_RESOLUTION_NAIVE)
     add_subdirectory(resolution_naive_first_fit)
 endif ()
