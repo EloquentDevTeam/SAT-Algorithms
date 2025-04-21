@@ -6,21 +6,24 @@
 #include <cstdint>
 #include <vector>
 #include <optional>
+#pragma GCC optimize("O3,fast-math,unroll-loops")
+
 
 using Literal = int64_t;
 using Clause = std::set<Literal>;
 using ClauseSet = std::vector<Clause>;
 
 
-constexpr std::size_t THRESHOLD = 1000000000;
+constexpr std::size_t THRESHOLD = 71000000;
 [[nodiscard]] ClauseSet read_clauses(const char *file) {
     std::ifstream f(file);
-
+    f.tie(nullptr);
     size_t clause_count=0, lit_total_count=0;
     ClauseSet clauses;
     while (!f.eof()) {
         std::string line;
         std::getline(f,line);
+        if (line.empty()) break;
         while (line.starts_with('c')) {
             std::getline(f,line);
         }
@@ -34,6 +37,7 @@ constexpr std::size_t THRESHOLD = 1000000000;
         Clause c;
         int64_t lit = 0;
         while (is>>lit) {
+            if (lit == 0) break;
             c.emplace(lit);
         }
         clauses.emplace_back(c);
@@ -82,11 +86,18 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
                     return SatState::UNKNOWN;
                 auto result = can_join(cs[i],cs[j]);
                 if (result.first == false) continue;
-                canMakeNewClause = true;
-                auto new_clause = join(cs[i],cs[j],result.second);
 
+                auto new_clause = join(cs[i],cs[j],result.second);
                 if (new_clause.empty())
                     return SatState::UNSAT;
+
+                bool exists = false;
+                for (int k = 0; k < cs.size() && !exists; ++k) {
+                    if (new_clause == cs[k]) exists = true;
+                }
+                if (exists) continue;
+
+                canMakeNewClause = true;
                 cs.emplace_back(new_clause);
             }
         }
@@ -95,6 +106,8 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
     return SatState::SAT;
 }
 int main(int argc, const char* argv[]) {
+    std::ios::sync_with_stdio(false);
+
     if (argc != 3) {
         std::cerr<<"Wrong input. Usage ./resolution_naive_first_fit <path_to_cnf_file> <path_to_log_file>";
         return 1;
@@ -103,6 +116,8 @@ int main(int argc, const char* argv[]) {
     ClauseSet clauses = read_clauses(argv[1]);
     std::ofstream g(argv[2]);
     g<<"Start SAT. Result: ";
+    g.flush();
+
     switch (resolution(clauses)) {
         case SatState::SAT:
             g<<"SAT";
@@ -114,6 +129,8 @@ int main(int argc, const char* argv[]) {
             g<<"UNKNOWN";
             break;
     }
+    g<<'\n';
+    g<<"Clauze generate: "<<clauses.size();
     g.close();
     return 0;
 }
