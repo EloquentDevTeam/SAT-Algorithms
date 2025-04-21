@@ -13,7 +13,7 @@
 
 using Literal = int64_t;
 using Clause = std::set<Literal>;
-using ClauseSet = std::vector<Clause>;
+using ClauseSet = std::set<Clause>;
 
 
 constexpr std::size_t THRESHOLD = 71000000;
@@ -42,7 +42,7 @@ constexpr std::size_t THRESHOLD = 71000000;
             if (lit == 0) break;
             c.emplace(lit);
         }
-        clauses.emplace_back(c);
+        clauses.emplace(c);
     }
     f.close();
     return clauses;
@@ -82,25 +82,23 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
     do
     {
         canMakeNewClause = false;
-        for (auto i = 0; i < cs.size()-1; ++i) {
-            for (auto j= i+1; j < cs.size(); ++j) {
+        for (auto i = cs.begin(); i != cs.end(); ++i) {
+            auto j = i;
+            std::advance(j,1);
+            for (; j != cs.end(); ++j) {
                 if (cs.size() >= THRESHOLD)
                     return SatState::UNKNOWN;
-                auto result = can_join(cs[i],cs[j]);
+                auto result = can_join(*i,*j);
                 if (result.first == false) continue;
 
-                auto new_clause = join(cs[i],cs[j],result.second);
+                auto new_clause = join(*i,*j,result.second);
                 if (new_clause.empty())
                     return SatState::UNSAT;
 
-                bool exists = false;
-                for (int k = 0; k < cs.size() && !exists; ++k) {
-                    if (new_clause == cs[k]) exists = true;
-                }
-                if (exists) continue;
+                if (cs.contains(new_clause)) continue;
 
                 canMakeNewClause = true;
-                cs.emplace_back(new_clause);
+                cs.emplace(new_clause);
             }
         }
     }
@@ -135,7 +133,7 @@ int main(int argc, const char* argv[]) {
             break;
     }
     g<<'\n';
-    g<<"Clauze generate: "<<clauses.size()<<'\n';
+    g<<"Clauze generate: "<<(result==SatState::UNSAT ? clauses.size()+1 : clauses.size())<<'\n';
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
     g<<"Timp de execuție: "<<elapsed<<"μs"<<'\n';
     g<<"Memorie consumată: "<< peakSize<<"B."<<'\n';
