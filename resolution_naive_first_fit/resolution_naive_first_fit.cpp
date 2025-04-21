@@ -1,0 +1,119 @@
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <set>
+#include <sstream>
+#include <cstdint>
+#include <vector>
+#include <optional>
+
+using Literal = int64_t;
+using Clause = std::set<Literal>;
+using ClauseSet = std::vector<Clause>;
+
+
+constexpr std::size_t THRESHOLD = 1000000000;
+[[nodiscard]] ClauseSet read_clauses(const char *file) {
+    std::ifstream f(file);
+
+    size_t clause_count=0, lit_total_count=0;
+    ClauseSet clauses;
+    while (!f.eof()) {
+        std::string line;
+        std::getline(f,line);
+        while (line.starts_with('c')) {
+            std::getline(f,line);
+        }
+        if (line.starts_with("p cnf ")) {
+            line = line.substr(strlen("p cnf "));
+            std::istringstream is(line);
+            is>>clause_count>>lit_total_count;
+            continue;
+        }
+        std::istringstream is(line);
+        Clause c;
+        int64_t lit = 0;
+        while (is>>lit) {
+            c.emplace(lit);
+        }
+        clauses.emplace_back(c);
+    }
+    f.close();
+    return clauses;
+}
+
+enum class SatState {
+    SAT,
+    UNSAT,
+    UNKNOWN
+};
+
+std::pair<bool,int64_t> can_join(const Clause& c1, const Clause& c2) {
+    size_t pairs = 0;
+    int64_t lit = 0;
+    for (auto& literal: c1) {
+        if (c2.contains(literal*-1)) {
+            ++pairs;
+            lit = literal;
+        }
+    }
+    return {pairs == 1,lit};
+}
+Clause join(const Clause& c1, const Clause& c2, const Literal l) {
+    Clause c12;
+    for (auto& lit : c1) {
+        c12.emplace(lit);
+    }
+    for (auto& lit : c2) {
+        c12.emplace(lit);
+    }
+    c12.erase(l);
+    c12.erase(-l);
+    return c12;
+}
+[[nodiscard]] SatState resolution(ClauseSet& cs) {
+    bool canMakeNewClause = false;
+    do
+    {
+        canMakeNewClause = false;
+        for (auto i = 0; i < cs.size()-1; ++i) {
+            for (auto j= i+1; j < cs.size(); ++j) {
+                if (cs.size() >= THRESHOLD)
+                    return SatState::UNKNOWN;
+                auto result = can_join(cs[i],cs[j]);
+                if (result.first == false) continue;
+                canMakeNewClause = true;
+                auto new_clause = join(cs[i],cs[j],result.second);
+
+                if (new_clause.empty())
+                    return SatState::UNSAT;
+                cs.emplace_back(new_clause);
+            }
+        }
+    }
+    while (canMakeNewClause);
+    return SatState::SAT;
+}
+int main(int argc, const char* argv[]) {
+    if (argc != 3) {
+        std::cerr<<"Wrong input. Usage ./resolution_naive_first_fit <path_to_cnf_file> <path_to_log_file>";
+        return 1;
+    }
+
+    ClauseSet clauses = read_clauses(argv[1]);
+    std::ofstream g(argv[2]);
+    g<<"Start SAT. Result: ";
+    switch (resolution(clauses)) {
+        case SatState::SAT:
+            g<<"SAT";
+            break;
+        case SatState::UNSAT:
+            g<<"UNSAT";
+            break;
+        case SatState::UNKNOWN:
+            g<<"UNKNOWN";
+            break;
+    }
+    g.close();
+    return 0;
+}

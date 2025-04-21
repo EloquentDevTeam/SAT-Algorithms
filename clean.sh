@@ -21,8 +21,8 @@ find "$dir" -type f | while IFS= read -r file; do
     BEGIN {skip=0}
     /^c[[:print:]]*/ {skip=1; next}
     skip {
-      if ($0 ~ /p cnf[[:space:]]+/) {
-        sub(/^.*p cnf[[:space:]]*/, "")
+      if ($0 ~ /^p cnf[[:space:]]+/) {
+        sub(/^p cnf[[:space:]]+/, "")
         skip=0
         print
       }

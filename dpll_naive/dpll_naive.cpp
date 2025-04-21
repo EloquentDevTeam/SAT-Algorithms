@@ -5,6 +5,7 @@
  *              Journal of Automated Reasoning no. 24
  */
 
+
 #pragma GCC optimize("O3,fast-math,unroll-loops")
 #include <iostream>
 #include <fstream>
@@ -12,6 +13,8 @@
 #include <unordered_map>
 #include <queue>
 #include <chrono>
+#include <stack>
+
 using ll = long long;
 using Literal = long long;
 using Clause = std::unordered_set<Literal>;
@@ -19,6 +22,14 @@ using ClauseSet = std::unordered_map<size_t, Clause>;
 using NodeType = std::pair<Literal, size_t>;
 
 size_t rec_cnt{0};
+
+struct ContextVariables {
+    std::queue<Literal> units;
+    ClauseSet clauses;
+};
+
+using Context = std::stack<ContextVariables>;
+
 
 std::queue<Literal> getUnitClauses(ClauseSet& clauses){
     std::queue<Literal> q;
@@ -50,46 +61,56 @@ ClauseSet unionWithLiteral(ClauseSet& clauses, Literal L){
     ClauseSet cs = clauses;
     Clause c = {L};
     size_t id{0};
-    while (clauses.find(id) != clauses.end()) ++id;
+    while (clauses.contains(id)) ++id;
     cs.emplace(id, c);
     return cs;
 }
 
-bool DPP(ClauseSet clauses){
+bool DPP(ContextVariables& initial_context_variables){
+
+    Context ctx_stack;
+    ctx_stack.emplace(initial_context_variables);
     ++rec_cnt;
+    bool result = false;
+    while (!ctx_stack.empty()) {
+        auto ctx = ctx_stack.top();
+        ctx_stack.pop();
+        ctx.units = getUnitClauses(ctx.clauses);
+        while(!ctx.units.empty()) {
+            bool should_start_over = false;
+            auto L{ctx.units.front()};
+            ctx.units.pop();
 
-    /* unit propagation */
-    std::queue<Literal> units = getUnitClauses(clauses);
-    while(!units.empty()){
-        auto L{units.front()};
-        units.pop();
+            /* unit subsumption */
+            for (auto it = ctx.clauses.begin(); it != ctx.clauses.end(); ) {
+                if (it->second.contains(L)) it = ctx.clauses.erase(it);
+                else ++it;
+            }
 
-        /* unit subsumption */
-        for (auto it = clauses.begin(); it != clauses.end(); ) {
-            if (it->second.find(L) != it->second.end()) it = clauses.erase(it);
-            else ++it;
-        }        
+            L *= (-1);
 
-        L *= (-1);
-
-        /* unit resolution */
-        for(auto& cl : clauses){
-            if(cl.second.find(L) != cl.second.end()) {
-                cl.second.erase(L);
-                if(cl.second.empty()) return false;
-                if(cl.second.size() == 1) units.push(*(cl.second.begin()));
+            /* unit resolution */
+            for(auto& cl : ctx.clauses){
+                if(cl.second.contains(L)) {
+                    cl.second.erase(L);
+                    if(cl.second.empty()) {
+                        return false;
+                    }
+                    if(cl.second.size() == 1) ctx.units.push(*(cl.second.begin()));
+                }
+            }
+            if(ctx.clauses.empty()) {
+               result = true;
             }
         }
 
-        if(clauses.empty()) return true;
+        /* attempting resolution */
+        Literal l{getBestLiteral(ctx.clauses)};
+
+        ctx_stack.push({.clauses = unionWithLiteral(ctx.clauses,l*(-1))});
+        ctx_stack.push({.clauses = unionWithLiteral(ctx.clauses,l)});
     }
-
-    /* attempting resolution */
-    Literal l{getBestLiteral(clauses)};
-
-    if(DPP(unionWithLiteral(clauses, l))) return true; 
-    if(DPP(unionWithLiteral(clauses, l*(-1)))) return true;
-    return false;
+    return result;
 }
 
 int main(int argc, char** argv){
@@ -120,7 +141,9 @@ int main(int argc, char** argv){
     fin.close();
 
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = DPP(clauses);
+    ContextVariables cv;
+    cv.clauses = clauses;
+    auto result = DPP(cv);
     auto end = std::chrono::high_resolution_clock::now();
 
     if(result) std::cout << "Result: SAT\n";

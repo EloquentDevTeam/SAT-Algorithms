@@ -1,0 +1,1 @@
+add_executable(resolution_naive_first_fit resolution_naive_first_fit.cpp)
