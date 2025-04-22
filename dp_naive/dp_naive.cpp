@@ -180,6 +180,7 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
                         return true;
                     }
                     process_clause_removal(db, clause);
+                    --it;
                     continue;
                 }
                 if (clause.contains(-lit)) {
