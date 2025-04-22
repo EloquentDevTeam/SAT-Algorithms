@@ -39,6 +39,7 @@ void onCtrlC(int sig) {
         std::string line;
         std::getline(f,line);
         if (line.empty()) break;
+        if (line =="%" || line=="0") continue;
         while (line.starts_with('c')) {
             std::getline(f,line);
         }
