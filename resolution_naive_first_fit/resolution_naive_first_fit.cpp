@@ -97,11 +97,12 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
     {
         canMakeNewClause = false;
         size_t iindex = 0,jindex=0;
-        for (auto i = cs.begin(); i != cs.end(); ++i,++iindex) {
+        bool reset_flag = false;
+        for (auto i = cs.begin(); i != cs.end() && !reset_flag; ++i,++iindex) {
             auto j = i;
             std::advance(j,1);
 
-            for (jindex=iindex+1; j != cs.end(); ++j,++jindex) {
+            for (jindex=iindex+1; j != cs.end() && !reset_flag; ++j,++jindex) {
                 if (cs.size() >= THRESHOLD)
                     return SatState::UNKNOWN;
                 auto result = can_join(*i,*j);
@@ -116,6 +117,7 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
 
                 canMakeNewClause = true;
                 cs.emplace(new_clause);
+                reset_flag = true;
             }
         }
     }

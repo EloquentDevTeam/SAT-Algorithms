@@ -172,8 +172,11 @@ void process_clause_removal(HeuristicsDB &db, const std::set<long>& clause) {
 bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, SatState &result, HeuristicsDB& db) {
     while (!single_literals.empty()) {
         for (const auto& lit: single_literals) {
-            for (auto it = cs.begin(); it != cs.end(); ++it) {
+            auto it = cs.begin();
+            while (it != cs.end()) {
                 auto clause = *it;
+                auto next = it;
+                std::advance(next,1);
                 if (clause.contains(lit)) {
                     cs.erase(clause);
                     if (cs.empty()) {
@@ -181,7 +184,7 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
                         return true;
                     }
                     process_clause_removal(db, clause);
-                    --it;
+                    it = next;
                     continue;
                 }
                 if (clause.contains(-lit)) {
@@ -194,6 +197,7 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
                     --db[-lit];
                     cs.emplace(clause);
                 }
+                ++it;
             }
         }
         single_literals.clear();
@@ -211,6 +215,8 @@ bool single_polarity_rule(ClauseSet &cs, HeuristicsDB &db, std::set<Literal>& si
         for (const auto& literal: single_polarity_literals) {
             for (auto it = cs.begin(); it != cs.end(); ++it) {
                 const auto clause = *it;
+                auto next = it;
+                std::advance(next,1);
                 if (clause.contains(literal)) {
                     cs.erase(clause);
                     process_clause_removal(db,clause);
@@ -218,6 +224,8 @@ bool single_polarity_rule(ClauseSet &cs, HeuristicsDB &db, std::set<Literal>& si
                         result = SatState::SAT;
                         return true;
                     }
+                    it = next;
+                    std::advance(it,-1);
                 }
             }
         }
@@ -277,11 +285,12 @@ bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_pola
     {
         canMakeNewClause = false;
         size_t iindex = 0,jindex=0;
-        for (auto i = cs.begin(); i != cs.end(); ++i,++iindex) {
+        bool reset_flag = false;
+        for (auto i = cs.begin(); i != cs.end() && !reset_flag; ++i,++iindex) {
             auto j = i;
             std::advance(j,1);
 
-            for (jindex=iindex+1; j != cs.end(); ++j,++jindex) {
+            for (jindex=iindex+1; j != cs.end() && !reset_flag; ++j,++jindex) {
                 if (cs.size() >= THRESHOLD) {
                     sat_result = SatState::UNKNOWN;
                     return true;
@@ -309,7 +318,7 @@ bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_pola
                     should_repeat_dp = true;
                 }
                 else if (hdb[-result.second] > 0 && hdb[result.second] == 0) {
-                    single_polarity_literals.emplace(result.second);
+                    single_polarity_literals.emplace(-result.second);
                     should_repeat_dp = true;
                 }
                 if (new_clause.size() == 1) {
@@ -318,9 +327,12 @@ bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_pola
                 }
                 canMakeNewClause = true;
                 cs.emplace(new_clause);
+                reset_flag = true;
+
                 max_clauses = std::max(max_clauses,clauses.size());
                 if (should_repeat_dp) //nu am rezolvat, dar am găsit ceva "interesant"
                     return false;
+
             }
         }
     }
@@ -343,7 +355,7 @@ int main(int argc, const char* argv[]) {
     clauses = read_clauses(argv[1],db);
     max_clauses = std::max(max_clauses,clauses.size());
     std::ofstream g(argv[2]);
-    g<<"Start SAT. Result: ";
+    g<<"Start SAT. Resultat: ";
     g.flush();
     auto start = std::chrono::high_resolution_clock::now();
     auto result = davis_putnam(clauses,db);
