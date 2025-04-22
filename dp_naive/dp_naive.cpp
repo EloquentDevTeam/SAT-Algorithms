@@ -19,6 +19,7 @@ using Clause = std::set<Literal>;
 using ClauseSet = std::set<Clause>;
 
 ClauseSet clauses;
+std::size_t max_clauses = 0;
 class HeuristicEntry {
     Literal literal;
     size_t occurences;
@@ -317,6 +318,7 @@ bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_pola
                 }
                 canMakeNewClause = true;
                 cs.emplace(new_clause);
+                max_clauses = std::max(max_clauses,clauses.size());
                 if (should_repeat_dp) //nu am rezolvat, dar am găsit ceva "interesant"
                     return false;
             }
@@ -339,6 +341,7 @@ int main(int argc, const char* argv[]) {
 
     HeuristicsDB db;
     clauses = read_clauses(argv[1],db);
+    max_clauses = std::max(max_clauses,clauses.size());
     std::ofstream g(argv[2]);
     g<<"Start SAT. Result: ";
     g.flush();
@@ -359,6 +362,7 @@ int main(int argc, const char* argv[]) {
     }
     g<<'\n';
     g<<"Clauze totale: "<<(result==SatState::UNSAT ? clauses.size()+1 : clauses.size())<<'\n';
+    g<<"Număr maxim de clauze "<<(result==SatState::UNSAT ? max_clauses+1 : max_clauses)<<'\n';
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
     g<<"Timp de execuție: "<<elapsed<<"μs"<<'\n';
     g<<"Memorie consumată: "<< peakSize<<"B."<<'\n';
