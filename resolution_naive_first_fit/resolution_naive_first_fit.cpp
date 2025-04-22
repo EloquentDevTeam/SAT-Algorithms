@@ -7,6 +7,8 @@
 #include <vector>
 #include <chrono>
 #include <memutils.h>
+#include <csignal>
+
 
 #pragma GCC optimize("O3,fast-math,unroll-loops")
 
@@ -15,8 +17,19 @@ using Literal = int64_t;
 using Clause = std::set<Literal>;
 using ClauseSet = std::set<Clause>;
 
+ClauseSet clauses;
 
 constexpr std::size_t THRESHOLD = 71000000;
+
+void onCtrlC(int sig) {
+    std::cerr<<"Programul a primit semnalul "<<sig<<"\n Rezultat: UNKNOWN.\n Nr. de clauze totale: "<<clauses.size()<<'\n';
+    size_t peakSize    = getPeakRSS( );
+    std::cerr<<"Memorie consumată: "<< peakSize<<"B."<<'\n';
+    std::cerr<<"Memorie consumată: "<< peakSize/1024<<"KB."<<'\n';
+    std::cerr<<"Memorie consumată: "<< peakSize/1024/1024<<"MB."<<'\n';
+    std::cerr<<"Memorie consumată: "<< peakSize/1024/1024/1024<<"GB."<<'\n';
+    exit(1);
+}
 [[nodiscard]] ClauseSet read_clauses(const char *file) {
     std::ifstream f(file);
     f.tie(nullptr);
@@ -82,16 +95,19 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
     do
     {
         canMakeNewClause = false;
-        for (auto i = cs.begin(); i != cs.end(); ++i) {
+        size_t iindex = 0,jindex=0;
+        for (auto i = cs.begin(); i != cs.end(); ++i,++iindex) {
             auto j = i;
             std::advance(j,1);
-            for (; j != cs.end(); ++j) {
+
+            for (jindex=iindex+1; j != cs.end(); ++j,++jindex) {
                 if (cs.size() >= THRESHOLD)
                     return SatState::UNKNOWN;
                 auto result = can_join(*i,*j);
                 if (result.first == false) continue;
 
                 auto new_clause = join(*i,*j,result.second);
+
                 if (new_clause.empty())
                     return SatState::UNSAT;
 
@@ -107,13 +123,16 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
 }
 int main(int argc, const char* argv[]) {
     std::ios::sync_with_stdio(false);
-
+    signal(SIGINT, &onCtrlC);
+    signal(SIGKILL, &onCtrlC);
+    signal(SIGABRT, &onCtrlC);
+    signal(SIGTERM, &onCtrlC);
     if (argc != 3) {
         std::cerr<<"Wrong input. Usage ./resolution_naive_first_fit <path_to_cnf_file> <path_to_log_file>";
         return 1;
     }
 
-    ClauseSet clauses = read_clauses(argv[1]);
+    clauses = read_clauses(argv[1]);
     std::ofstream g(argv[2]);
     g<<"Start SAT. Result: ";
     g.flush();
@@ -133,7 +152,7 @@ int main(int argc, const char* argv[]) {
             break;
     }
     g<<'\n';
-    g<<"Clauze generate: "<<(result==SatState::UNSAT ? clauses.size()+1 : clauses.size())<<'\n';
+    g<<"Clauze totale: "<<(result==SatState::UNSAT ? clauses.size()+1 : clauses.size())<<'\n';
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
     g<<"Timp de execuție: "<<elapsed<<"μs"<<'\n';
     g<<"Memorie consumată: "<< peakSize<<"B."<<'\n';
