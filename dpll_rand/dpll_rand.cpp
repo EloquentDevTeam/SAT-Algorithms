@@ -115,7 +115,7 @@ public:
         this->size = new_size;
     }
     void poppulate_literal_record() {
-        vector.clear();
+        existing_literals.clear();
         for (auto i = 2; i< this->vector.size(); ++i)
             if (vector[i].get_occurrences() > 0)
                 this->existing_literals.emplace_back(vector[i].get_literal());
