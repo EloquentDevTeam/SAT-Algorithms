@@ -24,27 +24,27 @@ ClauseSet clauses;
 std::size_t max_clauses = 0;
 class HeuristicEntry {
     Literal literal;
-    size_t occurences;
+    size_t occurrences;
 public:
     explicit HeuristicEntry(Literal l, size_t occurences = 0)
         : literal(l),
-          occurences(occurences) {
+          occurrences(occurences) {
     }
     HeuristicEntry() {
         literal = 0;
-        occurences = 0;
+        occurrences = 0;
     }
 
     friend auto operator<=>(const HeuristicEntry &lhs, size_t rhs) {
-        return lhs.occurences <=> rhs;
+        return lhs.occurrences <=> rhs;
     }
     HeuristicEntry operator++(int) {
         HeuristicEntry e( *this);
-        this->occurences++;
+        this->occurrences++;
         return e;
     }
     HeuristicEntry &operator++() {
-        this->occurences++;
+        this->occurrences++;
         return *this;
     }
 
@@ -52,24 +52,24 @@ public:
         return literal;
     }
 
-    [[nodiscard]] size_t get_occurences() const {
-        return occurences;
+    [[nodiscard]] size_t get_occurrences() const {
+        return occurrences;
     }
     void set_literal(const Literal l) {
         this->literal = l;
     }
 
     HeuristicEntry &operator--() {
-        if (occurences != 0)
-            this->occurences--;
+        if (occurrences != 0)
+            this->occurrences--;
         else
             std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
         return *this;
     }
     HeuristicEntry operator--(int) {
         const HeuristicEntry e = *this;
-        if (occurences != 0) {
-            this->occurences--;
+        if (occurrences != 0) {
+            this->occurrences--;
         }
         else
             std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
@@ -78,7 +78,7 @@ public:
     }
 
     friend bool operator==(const HeuristicEntry& lhs, size_t i) {
-        return lhs.occurences == i;
+        return lhs.occurrences == i;
     }
 };
 class HeuristicsDB {
