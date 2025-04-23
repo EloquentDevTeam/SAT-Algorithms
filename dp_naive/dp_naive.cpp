@@ -62,7 +62,7 @@ public:
     HeuristicEntry &operator--() {
         if (occurrences != 0)
             this->occurrences--;
-        else
+        else [[unlikely]]
             std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
         return *this;
     }
@@ -71,7 +71,7 @@ public:
         if (occurrences != 0) {
             this->occurrences--;
         }
-        else
+        else [[unlikely]]
             std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
 
         return e;
@@ -198,14 +198,14 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
                         result = SatState::SAT;
                         return true;
                     }
-                    std::cerr<<"Șterg clauza prin literal pur\n";
+                    //std::cerr<<"Șterg clauza prin literal pur\n";
                     process_clause_removal(db, clause);
                     it = next;
                     continue;
                 }
                 if (clause.contains(-lit)) {
                     cs.erase(clause);
-                    std::cerr<<"Șterg complementarul prin literal pur\n";
+                    //std::cerr<<"Șterg complementarul prin literal pur\n";
                     clause.erase(-lit);
                     if (clause.empty()) {
                         result = SatState::UNSAT;
@@ -236,7 +236,7 @@ bool single_polarity_rule(ClauseSet &cs, HeuristicsDB &db, std::set<Literal>& si
                 std::advance(next,1);
                 if (clause.contains(literal)) {
                     cs.erase(clause);
-                    std::cerr<<"Șterg clauza prin literal cu aceiași polaritate\n";
+                    //std::cerr<<"Șterg clauza prin literal cu aceiași polaritate\n";
                     process_clause_removal(db,clause);
                     if (cs.empty()) {
                         result = SatState::SAT;
