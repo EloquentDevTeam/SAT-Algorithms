@@ -10,7 +10,9 @@
 #include <csignal>
 #include <queue>
 #include <map>
+#include <filesystem>
 
+namespace fs = std::filesystem;
 
 #pragma GCC optimize("O3,fast-math,unroll-loops")
 
@@ -298,12 +300,11 @@ bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_pola
     {
         canMakeNewClause = false;
         size_t iindex = 0,jindex=0;
-        bool reset_flag = false;
-        for (auto i = cs.begin(); i != cs.end() && !reset_flag; ++i,++iindex) {
+        for (auto i = cs.begin(); i != cs.end(); ++i,++iindex) {
             auto j = i;
             std::advance(j,1);
 
-            for (jindex=iindex+1; j != cs.end() && !reset_flag; ++j,++jindex) {
+            for (jindex=iindex+1; j != cs.end(); ++j,++jindex) {
                 if (cs.size() >= THRESHOLD) {
                     sat_result = SatState::UNKNOWN;
                     return true;
@@ -338,7 +339,7 @@ bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_pola
                 }
                 canMakeNewClause = true;
                 cs.emplace(new_clause);
-                reset_flag = true;
+                //reset_flag = true;
 
                 max_clauses = std::max(max_clauses,clauses.size());
                 if (should_repeat_dp) //nu am rezolvat, dar am găsit ceva "interesant"
@@ -361,11 +362,17 @@ int main(int argc, const char* argv[]) {
         std::cerr<<"Wrong input. Usage ./resolution_naive_first_fit <path_to_cnf_file> <path_to_log_file>";
         return 1;
     }
+    if (!fs::exists(argv[1])) {
+        std::cerr<<"File "<<argv[1]<<" does not exist\n";
+        return 1;
+    }
 
     HeuristicsDB db;
+
     clauses = read_clauses(argv[1],db);
     max_clauses = std::max(max_clauses,clauses.size());
     std::ofstream g(argv[2]);
+    g<<"S-a citit "<<argv[1]<<'\n';
     g<<"Start SAT. Resultat: ";
     g.flush();
     auto start = std::chrono::high_resolution_clock::now();

@@ -8,7 +8,7 @@
 #include <chrono>
 #include <memutils.h>
 #include <csignal>
-
+#include <filesystem>
 
 #pragma GCC optimize("O3,fast-math,unroll-loops")
 
@@ -20,6 +20,8 @@ using ClauseSet = std::set<Clause>;
 ClauseSet clauses;
 
 constexpr std::size_t THRESHOLD = 71000000;
+namespace fs = std::filesystem;
+
 
 void onCtrlC(int sig) {
     std::cerr<<"Programul a primit semnalul "<<sig<<"\n Rezultat: UNKNOWN.\n Nr. de clauze totale: "<<clauses.size()<<'\n';
@@ -97,12 +99,11 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
     {
         canMakeNewClause = false;
         size_t iindex = 0,jindex=0;
-        bool reset_flag = false;
-        for (auto i = cs.begin(); i != cs.end() && !reset_flag; ++i,++iindex) {
+        for (auto i = cs.begin(); i != cs.end(); ++i,++iindex) {
             auto j = i;
             std::advance(j,1);
 
-            for (jindex=iindex+1; j != cs.end() && !reset_flag; ++j,++jindex) {
+            for (jindex=iindex+1; j != cs.end(); ++j,++jindex) {
                 if (cs.size() >= THRESHOLD)
                     return SatState::UNKNOWN;
                 auto result = can_join(*i,*j);
@@ -117,7 +118,6 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
 
                 canMakeNewClause = true;
                 cs.emplace(new_clause);
-                reset_flag = true;
             }
         }
     }
@@ -134,7 +134,10 @@ int main(int argc, const char* argv[]) {
         std::cerr<<"Wrong input. Usage ./resolution_naive_first_fit <path_to_cnf_file> <path_to_log_file>";
         return 1;
     }
-
+    if (!fs::exists(argv[1])) {
+        std::cerr<<"File "<<argv[1]<<" does not exist\n";
+        return 1;
+    }
     clauses = read_clauses(argv[1]);
     std::ofstream g(argv[2]);
     g<<"Start SAT. Result: ";
