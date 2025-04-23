@@ -35,3 +35,4 @@ Currently, there are 3 algorithms offered
 1. Resolution - Exhaustive/Naive approach (``-DENABLE_RESOLUTION_NAIVE``)
 2. Davis-Putnam (as described in his 1962 paper) - Exhaustive/Naive approach (``-DENABLE_DP_NAIVE``)
 3. Davis-Putnam-Logemann-Loveland (with the RAND literal choice policy) (``-DENABLE_DPLL_RAND``)
+4. Davis-Putnam-Logemann-Loveland (with the Most Common Literal (MCL) literal choice policy) (``-DENABLE_DPLL_MCL``)
