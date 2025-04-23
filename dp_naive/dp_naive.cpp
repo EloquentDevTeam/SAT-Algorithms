@@ -24,27 +24,27 @@ ClauseSet clauses;
 std::size_t max_clauses = 0;
 class HeuristicEntry {
     Literal literal;
-    size_t occurences;
+    size_t occurrences;
 public:
     explicit HeuristicEntry(Literal l, size_t occurences = 0)
         : literal(l),
-          occurences(occurences) {
+          occurrences(occurences) {
     }
     HeuristicEntry() {
         literal = 0;
-        occurences = 0;
+        occurrences = 0;
     }
 
     friend auto operator<=>(const HeuristicEntry &lhs, size_t rhs) {
-        return lhs.occurences <=> rhs;
+        return lhs.occurrences <=> rhs;
     }
     HeuristicEntry operator++(int) {
         HeuristicEntry e( *this);
-        this->occurences++;
+        this->occurrences++;
         return e;
     }
     HeuristicEntry &operator++() {
-        this->occurences++;
+        this->occurrences++;
         return *this;
     }
 
@@ -52,33 +52,33 @@ public:
         return literal;
     }
 
-    [[nodiscard]] size_t get_occurences() const {
-        return occurences;
+    [[nodiscard]] size_t get_occurrences() const {
+        return occurrences;
     }
     void set_literal(const Literal l) {
         this->literal = l;
     }
 
     HeuristicEntry &operator--() {
-        if (occurences != 0)
-            this->occurences--;
-        else
+        if (occurrences != 0)
+            this->occurrences--;
+        else [[unlikely]]
             std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
         return *this;
     }
     HeuristicEntry operator--(int) {
         const HeuristicEntry e = *this;
-        if (occurences != 0) {
-            this->occurences--;
+        if (occurrences != 0) {
+            this->occurrences--;
         }
-        else
+        else [[unlikely]]
             std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
 
         return e;
     }
 
     friend bool operator==(const HeuristicEntry& lhs, size_t i) {
-        return lhs.occurences == i;
+        return lhs.occurrences == i;
     }
 };
 class HeuristicsDB {
@@ -198,14 +198,14 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
                         result = SatState::SAT;
                         return true;
                     }
-                    std::cerr<<"Șterg clauza prin literal pur\n";
+                    //std::cerr<<"Șterg clauza prin literal pur\n";
                     process_clause_removal(db, clause);
                     it = next;
                     continue;
                 }
                 if (clause.contains(-lit)) {
                     cs.erase(clause);
-                    std::cerr<<"Șterg complementarul prin literal pur\n";
+                    //std::cerr<<"Șterg complementarul prin literal pur\n";
                     clause.erase(-lit);
                     if (clause.empty()) {
                         result = SatState::UNSAT;
@@ -236,7 +236,7 @@ bool single_polarity_rule(ClauseSet &cs, HeuristicsDB &db, std::set<Literal>& si
                 std::advance(next,1);
                 if (clause.contains(literal)) {
                     cs.erase(clause);
-                    std::cerr<<"Șterg clauza prin literal cu aceiași polaritate\n";
+                    //std::cerr<<"Șterg clauza prin literal cu aceiași polaritate\n";
                     process_clause_removal(db,clause);
                     if (cs.empty()) {
                         result = SatState::SAT;
