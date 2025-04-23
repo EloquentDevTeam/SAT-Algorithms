@@ -36,3 +36,5 @@
 tests*
 *.cnf
 *.benchmark
+sat24-bmarks*
+cmake-*

@@ -1,0 +1,2 @@
+add_executable(resolution_naive_first_fit resolution_naive_first_fit.cpp)
+target_link_libraries(resolution_naive_first_fit PRIVATE memutils)
