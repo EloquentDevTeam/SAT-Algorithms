@@ -32,7 +32,6 @@ using ClauseSet = vector<vector<int>>;
         Clause c;
         int lit = 0;
         while (is>>lit) {
-            if (lit == 0) break;
             c.push_back(lit);
         }
         clauses.emplace_back(c);
