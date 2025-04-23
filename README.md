@@ -30,7 +30,7 @@ All scripts are verbose and the latter will output a `<program>_<date>_<time>.be
 Enjoy! =D
 
 ## Algorithms 
-Currently, there are 3 algorithms offered
+Currently, this set contains the following algorithms:
 
 1. Resolution - Exhaustive/Naive approach (``-DENABLE_RESOLUTION_NAIVE``)
 2. Davis-Putnam (as described in his 1962 paper) - Exhaustive/Naive approach (``-DENABLE_DP_NAIVE``)
