@@ -38,3 +38,4 @@ tests*
 *.benchmark
 sat24-bmarks*
 cmake-*
+.venv/
