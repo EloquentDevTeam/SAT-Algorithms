@@ -55,7 +55,10 @@ def start_benchmarks(algorithm: str, files: list[str], jobs: int, result_dir: st
                     pid = proc.pid
                     process = psutil.Process(pid)
                     if proc.poll() is not None:
-                        active_jobs.remove(proc)
+                        if proc.poll() != 0:
+                            print(f'WARNING - ERROR EXIT CODE {proc.poll()} FOR TEST {os.path.basename(test)}')
+                        if proc in active_jobs:
+                            active_jobs.remove(proc)
                         continue
                     if active_jobs.count(proc) == 0:
                         active_jobs.append(proc)
