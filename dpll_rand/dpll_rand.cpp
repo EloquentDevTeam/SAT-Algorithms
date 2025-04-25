@@ -237,7 +237,7 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
                     --db[-lit];
                     cs.emplace(clause);
                 }
-                ++it;
+                it=next;
             }
         }
         single_literals.clear();
@@ -322,7 +322,7 @@ SatState davis_putnam_logemann_loveland(const HeuristicsDB &db, const ClauseSet 
         auto c_solved = davis_putnam(c_context,result);
         c_context.get_db().poppulate_literal_record();
         if (c_solved && result == SatState::SAT) {
-            return  SatState::SAT;
+            return SatState::SAT;
         }
         if (!c_solved){
             Literal l = pick_literal(c_context);
