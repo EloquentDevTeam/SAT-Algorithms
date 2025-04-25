@@ -214,7 +214,7 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
                     --db[-lit];
                     cs.emplace(clause);
                 }
-                ++it;
+                it=next;
             }
         }
         single_literals.clear();
