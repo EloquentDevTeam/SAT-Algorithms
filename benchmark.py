@@ -14,7 +14,7 @@ def spawn_processes(algorithm: str, fls: list[str], jobs:int, result_path: str) 
     for _ in range(jobs):
         if len(fls) == 0:
             break
-        processees.append((subprocess.Popen([apath, fls[0], f'{result_path}/{os.path.basename(fls[0])}.result.txt']),fls[0][:]))
+        processees.append((psutil.Popen([apath, fls[0], f'{result_path}/{os.path.basename(fls[0])}.result.txt']),fls[0][:]))
         fls.remove(fls[0])
     return processees
 
@@ -52,8 +52,8 @@ def start_benchmarks(algorithm: str, files: list[str], jobs: int, result_dir: st
         while True:
             for proc, test in procs:
                 try:
-                    pid = proc.pid
-                    process = psutil.Process(pid)
+                    if proc.status() == psutil.STATUS_ZOMBIE and proc in active_jobs:
+                        active_jobs.remove(proc)
                     if proc.poll() is not None:
                         if proc.poll() != 0:
                             print(f'WARNING - ERROR EXIT CODE {proc.poll()} FOR TEST {os.path.basename(test)}')
@@ -63,9 +63,9 @@ def start_benchmarks(algorithm: str, files: list[str], jobs: int, result_dir: st
                     if active_jobs.count(proc) == 0:
                         active_jobs.append(proc)
                         results[test] = PlotData(algorithm,test)
-                    with process.oneshot():
-                        memory_usage = process.memory_info().rss / 1024
-                        cpu_time = process.cpu_times().system + process.cpu_times().user
+                    with proc.oneshot():
+                        memory_usage = proc.memory_info().rss / 1024
+                        cpu_time = proc.cpu_times().system + proc.cpu_times().user
                         results[test].update(memory_usage,cpu_time)
                 except NoSuchProcess:
                     if proc in active_jobs:
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         print(f'{args.algorithm} is not a file')
         exit(1)
 
-    result_dir = f'{args.test_directory}/results'
+    result_dir = f'{args.test_directory}/{os.path.basename(args.algorithm)}_results'
     try:
         os.mkdir(result_dir)
     except FileExistsError:
