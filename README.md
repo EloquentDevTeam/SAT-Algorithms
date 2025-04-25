@@ -1,6 +1,5 @@
 # SAT Algorithms
 A collection of satisfiability algorithms to be merged into LibLogic, eventually.
-
 The programs are guaranteed to work with the benchmarks available at https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html
 
 
@@ -23,11 +22,17 @@ The programs are guaranteed to work with the benchmarks available at https://www
    ```
    $ python3 benchmark.py -t /path/to/folder/containing/cnf/files /path/to/algorithm
    ```
-   This will generate a ``results`` directory inside the cnf files directory containing the output for each test and a CSV file with all runs.
 
-All scripts are verbose and the latter will output a `<program>_<date>_<time>.benchmark` file with all results.
+   You may also use the ``-j`` parameter to speed up the procedure, by letting the script spawn more instances of the same process, like so
+   ```
+   # python3 benchmark.py -t -j 10 /path/to/folder/containing/cnf/files /path/to/algorithm
+   ```
 
-Enjoy! =D
+    **NOTE** Some algorithms (in particular resolution) on big datasets require large amounts of RAM. **The benchmark script does NOT employ ANY memory limits on the spawned subprocesses.**
+   **You have been officially warned**
+
+This will generate a ``results`` directory inside the cnf files directory containing the output for each test and a CSV file with all runs.
+
 
 ## Algorithms 
 Currently, this set contains the following algorithms:
