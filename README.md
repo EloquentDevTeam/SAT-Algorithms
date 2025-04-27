@@ -42,14 +42,14 @@ usage: mkcnf.py [-h] --clause-count CLAUSE_COUNT --clause-max-size CLAUSE_MAX_SI
                 [--batch-size BATCH_SIZE] [--name NAME] [--seed SEED] [--path PATH] [-f]
 ```
 
-`--clause-count` - how many clauses should there be generated
-`--clause-max-size` - maximum size of clauses (must be in \[0, literal_count\])
-`--literal-count` - how many literals should the test have (literals may appear in either polarity. This argument only controls the maximum absolute value of literals) - corresponds to `literal_count`
-`--batch-size` - how many tests should be generated (default: `1`)
-`--name` - how should the folder where the tests will be stored called
-`--seed` - seed for the random number generator to use (**MUST BE A NUMBER**)
-`--path` - where to place the subfolder (default: directory where the script is located)
-`-f`,  `--force` - overwrite all tests present in a given subdirectory. If this argument is not supplied, then the program will ask to overwrite the tests if it detects that the subfolder at `<--path>/<--name>` exists
+- `--clause-count` - how many clauses should there be generated
+- `--clause-max-size` - maximum size of clauses (must be in \[0, literal_count\])
+- `--literal-count` - how many literals should the test have (literals may appear in either polarity. This argument only controls the maximum absolute value of literals) - corresponds to `literal_count`
+- `--batch-size` - how many tests should be generated (default: `1`)
+- `--name` - how should the folder where the tests will be stored called
+- `--seed` - seed for the random number generator to use (**MUST BE A NUMBER**)
+- `--path` - where to place the subfolder (default: directory where the script is located)
+- `-f`,  `--force` - overwrite all tests present in a given subdirectory. If this argument is not supplied, then the program will ask to overwrite the tests if it detects that the subfolder at `<--path>/<--name>` exists
 
 This will generate a number of `.cnf` files you can use with the algorithms supplied in this repository
 
