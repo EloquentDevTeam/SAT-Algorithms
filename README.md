@@ -59,4 +59,4 @@ Currently, this set contains the following algorithms:
 1. Resolution - Exhaustive/Naive approach (``-DENABLE_RESOLUTION_NAIVE``) as described in [this paper](https://dl.acm.org/doi/abs/10.1145/321033.321034)
 2. Davis-Putnam (as described in [his 1962 paper](https://dl.acm.org/doi/abs/10.1145/321033.321034)) - Exhaustive/Naive approach (``-DENABLE_DP_NAIVE``)
 3. Davis-Putnam-Logemann-Loveland (with the RAND literal choice policy) (``-DENABLE_DPLL_RAND``) - adapted to an iterative approach from [Implementing the Davis–Putnam Method by H. Shang and Mark E Stickel](https://www.math.ucdavis.edu/~deloera/TEACHING/MATH165/davisputnam.pdf)
-4. Davis-Putnam-Logemann-Loveland (with the Most Common Literal (MCL) literal choice policy) (``-DENABLE_DPLL_MCL``) - same as above
+4. Davis-Putnam-Logemann-Loveland (with the Most Common Literal (MCL) literal choice policy) (``-DENABLE_DPLL_MCL``) - same paper as above
