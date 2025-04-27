@@ -14,9 +14,9 @@ The programs are guaranteed to work with the benchmarks available at https://www
 2. Run CMake
    ```
    $ mkdir build
-   $ cmake -B build -G Makefile # This configure to build all algorithms. Append -DENABLE_<algo>:OFF to disable <algo>. More info in the algorithms section
+   $ cmake -B build # This is configured by default to build all algorithms. Append -DENABLE_<algo>:OFF to disable <algo>. More info in the algorithms section
    $ cd build
-   $ make -j$(nproc) # or other commands on non-UNIX platforms.
+   $ make -j$(nproc) # or other commands depending on the generator used by CMake.
    ```
 3. You are now ready to run the tests! You can either run each one of them individually, or you can use the convenient `benchmark.py` script to run all of them for you (one directory at a time):
    ```
