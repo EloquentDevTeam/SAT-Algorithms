@@ -12,8 +12,8 @@ public:
     Sat(const Sat&);
     friend bool det_satisfiability(Sat&);
 private:
-    friend void solve_chosen_clause(Sat&, int);
-    friend void solve_unit_clauses(Sat&);
+    friend void solve_chosen_clause(Sat&,bool&,int);
+    friend void solve_unit_clauses(Sat&,bool&);
     friend void max_freq(int&,int&,const Sat&);
 };
 
