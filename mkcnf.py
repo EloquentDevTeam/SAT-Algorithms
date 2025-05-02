@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import argparse
 import random
@@ -15,7 +16,6 @@ def get_literal(clause_literals: list[int], literal_count: int) -> int:
 def get_clauses(literal_count: int, clause_count: int, clause_min_size: int, clause_max_size: int, seed: int | None) -> str:
     output = StringIO()
     output.write(f'p cnf {literal_count} {clause_count}\n')
-    random.seed(seed)
     for c_clause in range(clause_count):
         clause_size = random.randint(clause_min_size,clause_max_size)
         literals = list()
@@ -45,9 +45,9 @@ if __name__ == '__main__':
     # TODO: parser.add_argument('--bias',help='Hints to the formulae generator to get a particular set of formulae')
     parser.add_argument('-f','--force',help='Overwrite existing directory', action='store_true')
 
-
-
     args = parser.parse_args()
+    random.seed(args.seed)
+    
     if args.clause_min_size < 1:
         print('Clauses must have at least one literal')
         exit(1)
