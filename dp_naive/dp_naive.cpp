@@ -29,6 +29,16 @@ std::atomic<bool> should_stop = false;
 ClauseSet clauses;
 std::size_t max_clauses{0};
 
+void onCtrlC(int sig) {
+    std::cerr << "Programul a primit semnalul " << sig << "\n Rezultat: UNKNOWN.\n Nr. de clauze totale: " <<clauses.size()<< '\n';
+    size_t peakSize{getPeakRSS()};
+    std::cerr << "Memorie consumată: " << peakSize << " B.\n";
+    std::cerr << "Memorie consumată: " << peakSize/1024 << " KB.\n";
+    std::cerr << "Memorie consumată: " << peakSize/1024/1024 << " MB.\n";
+    std::cerr << "Memorie consumată: " << peakSize/1024/1024/1024 << " GB.\n";
+    exit(1);
+}
+
 enum class SatState {
     SAT,
     UNSAT,
@@ -106,16 +116,6 @@ public:
     }
 };
 
-void onCtrlC(int sig) {
-    std::cerr << "Programul a primit semnalul " << sig << "\n Rezultat: UNKNOWN.\n Nr. de clauze totale: " <<clauses.size()<< '\n';
-    size_t peakSize{getPeakRSS()};
-    std::cerr << "Memorie consumată: " << peakSize << " B.\n";
-    std::cerr << "Memorie consumată: " << peakSize/1024 << " KB.\n";
-    std::cerr << "Memorie consumată: " << peakSize/1024/1024 << " MB.\n";
-    std::cerr << "Memorie consumată: " << peakSize/1024/1024/1024 << " GB.\n";
-    exit(1);
-}
-
 void analyse(const Clause& c, HeuristicsDB& db) {
     for (auto& literal: c) {
         ++db[literal];
@@ -135,7 +135,7 @@ void analyse(const Clause& c, HeuristicsDB& db) {
         std::getline(f,line);
         
         if (line.empty()) break;
-        if (line =="%" || line=="0") continue;
+        if (line == "%" || line == "0") continue;
 
         while (line.starts_with('c')) std::getline(f,line);
 
@@ -389,6 +389,9 @@ int main(int argc, const char* argv[]) {
         end = std::chrono::high_resolution_clock::now();
         should_stop = true;
     }
+    
+    size_t peakSize{getPeakRSS()};
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
 
     switch (sat_state) {
         case SatState::SAT:
@@ -404,8 +407,6 @@ int main(int argc, const char* argv[]) {
     }
     g << '\n';
     
-    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end-start).count();
-    size_t peakSize{getPeakRSS()};
 
     g << "Clauze totale: " << (sat_state == SatState::UNSAT ? clauses.size()+1 : clauses.size()) << '\n';
     g << "Număr maxim de clauze " << (sat_state == SatState::UNSAT ? max_clauses+1 : max_clauses) << '\n';
