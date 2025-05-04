@@ -35,7 +35,11 @@
 .vscode
 tests*
 *.cnf
+*.log
 *.benchmark
 sat24-bmarks*
-cmake-*
+cmake*
 .venv/
+Makefile
+CMakeFiles/
+CMakeCache.txt
