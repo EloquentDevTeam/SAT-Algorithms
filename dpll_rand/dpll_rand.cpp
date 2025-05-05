@@ -28,7 +28,7 @@ using Clause = std::set<Literal>;
 using ClauseSet = std::set<Clause>;
 
 constexpr std::size_t THRESHOLD = 71000000;
-constexpr auto TIMEOUT = std::chrono::seconds(300);
+constexpr auto TIMEOUT = std::chrono::seconds(60);
 
 std::atomic<bool> should_stop = false;
 std::size_t max_clauses{0};

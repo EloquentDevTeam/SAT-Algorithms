@@ -1,12 +1,26 @@
+#!/usr/bin/env python3
 import argparse
 import csv
 import os
+import sys
 import psutil
 import subprocess
 import time
 
 from psutil import NoSuchProcess
 
+term_width, _ = os.get_terminal_size()
+
+def print_progress_bar(progress:int, total:int, algo: str, bar_length = 40):
+    percent = progress / total
+    filled_length = int(bar_length * percent)
+    bar = '=' * filled_length + '-' * (bar_length - filled_length)
+
+    sys.stdout.write('\x1b[2A')
+    sys.stdout.write('\x1b[2K\r')
+    print(f"Algorithm: {algo}")
+    sys.stdout.write('\x1b[2K\r')
+    print(f"Progress: |{bar}| {percent:.1%} ({progress}/{total})", flush=True)
 
 def spawn_processes(algorithm: str, fls: list[str], jobs:int, result_path: str) -> (list[subprocess.Popen],list[str]):
     apath = os.path.abspath(algorithm)
@@ -46,7 +60,11 @@ class PlotData:
 
 def start_benchmarks(algorithm: str, files: list[str], jobs: int, result_dir: str) -> {str: PlotData}:
     results: {str: PlotData} = {}
+    nmax = len(files)
+    print("\n")
     while len(files) > 0:
+        print_progress_bar(nmax - len(files) + 1, nmax, algorithm, term_width-40)
+
         procs = spawn_processes(algorithm,files,jobs,result_dir)
         active_jobs = []
         while True:
