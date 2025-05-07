@@ -197,7 +197,7 @@ int main(int argc, const char* argv[]) {
     g << '\n';
     
 
-    g << "Clauze totale: " << (sat_state == SatState::UNSAT ? clauses.size()+1 : clauses.size()) << '\n';
+    g << "Total clauze: " << (sat_state == SatState::UNSAT ? clauses.size()+1 : clauses.size()) << '\n';
     g << "Timp de execuție: " << elapsed << "μs\n";
     g << "Memorie consumată: " << peakSize << " B.\n";
     g << "Memorie consumată: " << peakSize/1024 << " KB.\n";
