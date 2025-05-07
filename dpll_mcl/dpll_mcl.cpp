@@ -92,6 +92,9 @@ ClauseSet unionWithLiteral(ClauseSet &clauses, Literal L) {
 }
 
 SatState DPLL(ClauseSet &clauses, std::unordered_map<Literal, size_t> &freqMap){
+    max_clauses = std::max(max_clauses, clauses.size());
+    if(should_stop.load()) return SatState::UNKNOWN;
+    
     /* unit propagation */
     std::queue<Literal> units = getUnitClauses(clauses);
     while (!units.empty() && !should_stop.load()) {
@@ -107,7 +110,6 @@ SatState DPLL(ClauseSet &clauses, std::unordered_map<Literal, size_t> &freqMap){
                 ++it;
             }
         }
-        max_clauses = std::max(max_clauses, clauses.size());
 
         L *= (-1);
 
@@ -121,10 +123,11 @@ SatState DPLL(ClauseSet &clauses, std::unordered_map<Literal, size_t> &freqMap){
                 if (cl.second.size() == 1) units.push(*(cl.second.begin()));
             }
         }
-        max_clauses = std::max(max_clauses, clauses.size());
 
         if (clauses.empty()) return SatState::SAT;
     }
+
+    if(should_stop.load()) return SatState::UNKNOWN;
 
     /* attempting resolution */
     Literal l{getBestLiteral(freqMap)};
