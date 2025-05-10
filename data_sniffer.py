@@ -91,12 +91,12 @@ if __name__ == "__main__":
                     test_number = int(os.path.basename(file).split('.')[0][4:])
                     test_result  = parse_cnf_txt_result(file,test_number)
                     c_writer.writerow([test_result['Test'],test_result['Max RSS'],test_result['Algo time'], test_result['Result']])
-                    c_algo_time = float(test_result['Algo time'])
-                    tests.append(int(test_result['Test']))
                     result = test_result.items()
-                    max_algo_time_data.append(c_algo_time)
-                    max_rss_data.append(float(test_result['Max RSS']))
+                    c_algo_time = float(test_result['Algo time'])
                     if c_algo_time > 0:
+                        tests.append(int(test_result['Test']))
+                        max_algo_time_data.append(c_algo_time)
+                        max_rss_data.append(float(test_result['Max RSS']))
                         average_algo_time+=c_algo_time
                         average_memory_usage+=float(test_result['Max RSS'])
                         successful_tests+=1
@@ -106,12 +106,11 @@ if __name__ == "__main__":
                 rss_data = np.array(max_rss_data)
                 algo_time_data = np.array(max_algo_time_data)
                 test_indices = np.array(tests)
-                plt.figure().set_size_inches(8,4)
-                plt.scatter(test_indices, rss_data, label = "RSS maxim")
-                plt.scatter(test_indices, algo_time_data, label = "Timp de execuție măsurat")
+                plt.figure().set_size_inches(10,4)
+                plt.scatter(test_indices, rss_data, label = "RSS maxim (KB)")
+                plt.scatter(test_indices, algo_time_data, label = "Timp de execuție măsurat (μs)")
                 plt.legend()
-                plt.axhline(y=-1, color='red', linestyle='--')
-                plt.title(f'{test_name} Utilizare memorie (RSS) și timp maxim de execuție - {batch_name}')
+                plt.title(f'{test_name} Utilizare memorie (RSS) și timp maxim de execuție (teste terminate) - {batch_name}')
                 os.chdir(args.test_results_directory)
 
                 plt.savefig(f'{test_name}_graph.png', dpi=300)
