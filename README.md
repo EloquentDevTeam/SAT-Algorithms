@@ -6,7 +6,7 @@ The programs are guaranteed to work with the benchmarks available at https://www
 ## Dependencies
 - CMake (>=3.30)
 - Compiler that supports C++20
-- Python 3 (with  [psutil](https://pypi.org/project/psutil/) installed)
+- Python 3 (with  [psutil](https://pypi.org/project/psutil/) and [matplotlib](https://pypi.org/project/matplotlib/) installed)
 
   
 ## Usage
