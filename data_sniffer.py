@@ -82,7 +82,8 @@ if __name__ == "__main__":
                 os.chdir(rundir)
                 average_algo_time = float(0)
                 average_memory_usage = float(0)
-                succeeded_test = 0
+                successful_tests = 0
+                unsuccessful_tests = 0
                 max_rss_data = []
                 max_algo_time_data = []
                 tests = []
@@ -98,15 +99,10 @@ if __name__ == "__main__":
                     if c_algo_time > 0:
                         average_algo_time+=c_algo_time
                         average_memory_usage+=float(test_result['Max RSS'])
-                        succeeded_test+=1
-                    if average_algo_time < 0:
-                        breakpoint()
-
-                    if average_memory_usage < 0:
-                        breakpoint()
-                # Convert object to a list
-
-                # Convert list to an array
+                        successful_tests+=1
+                    else:
+                        unsuccessful_tests+=1
+                batch_name = os.path.basename(args.test_results_directory)
                 rss_data = np.array(max_rss_data)
                 algo_time_data = np.array(max_algo_time_data)
                 test_indices = np.array(tests)
@@ -115,14 +111,21 @@ if __name__ == "__main__":
                 plt.scatter(test_indices, algo_time_data, label = "Timp de execuție măsurat")
                 plt.legend()
                 plt.axhline(y=-1, color='red', linestyle='--')
-                plt.title(f'{test_name} Utilizare memorie (RSS) și timp maxim de execuție')
+                plt.title(f'{test_name} Utilizare memorie (RSS) și timp maxim de execuție - {batch_name}')
                 os.chdir(args.test_results_directory)
 
                 plt.savefig(f'{test_name}_graph.png', dpi=300)
                 plt.clf()
+                labels = ["Teste terminate", "Teste neterminate"]
+                values = [successful_tests/len(files[folder]),unsuccessful_tests/len(files[folder])]
+                plt.figure().set_size_inches(7,4)
+                plt.pie(values,labels=labels,autopct='%1.1f%%')
+                plt.title(f'Rata de terminare a testelor pentru {test_name} - {batch_name}')
+                plt.savefig(f'{test_name}_success_rate.png', dpi=300)
+                plt.clf()
                 os.chdir(rundir)
-                if succeeded_test > 0:
-                    average_algo_time/=succeeded_test
+                if successful_tests > 0:
+                    average_algo_time/=successful_tests
                     logobj.write(f'Average algo time: {round(average_algo_time,3)}\n')
                     logobj.write(f'Average RSS usage: {round(average_memory_usage,3)}\n')
                 else:
