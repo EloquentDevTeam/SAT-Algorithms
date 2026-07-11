@@ -23,3 +23,6 @@ endif ()
 if (ENABLE_DPLL_MCL)
     add_subdirectory(dpll_mcl)
 endif ()
+
+enable_testing()
+add_subdirectory(tests)
