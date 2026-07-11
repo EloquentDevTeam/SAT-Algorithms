@@ -4,7 +4,6 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <set>
 #include <sstream>
 #include <cstdint>
 #include <vector>
@@ -13,43 +12,37 @@
 #include <csignal>
 #include <queue>
 #include <map>
-#include <filesystem>
 #include <random>
 #include <stack>
-
+#include "dpll_rand.h"
 
 namespace fs = std::filesystem;
 
 #pragma GCC optimize("O3,fast-math,unroll-loops")
 
-using Literal = int64_t;
-using Clause = std::set<Literal>;
-using ClauseSet = std::set<Clause>;
-
-
 std::size_t max_clauses = 0;
-class HeuristicEntry {
+class HeuristicEntryDPLL {
     Literal literal;
     size_t occurrences;
 public:
-    explicit HeuristicEntry(Literal l, size_t occurences = 0)
+    explicit HeuristicEntryDPLL(Literal l, size_t occurences = 0)
         : literal(l),
           occurrences(occurences) {
     }
-    HeuristicEntry() {
+    HeuristicEntryDPLL() {
         literal = 0;
         occurrences = 0;
     }
 
-    friend auto operator<=>(const HeuristicEntry &lhs, size_t rhs) {
+    friend auto operator<=>(const HeuristicEntryDPLL &lhs, size_t rhs) {
         return lhs.occurrences <=> rhs;
     }
-    HeuristicEntry operator++(int) {
-        HeuristicEntry e( *this);
+    HeuristicEntryDPLL operator++(int) {
+        HeuristicEntryDPLL e( *this);
         this->occurrences++;
         return e;
     }
-    HeuristicEntry &operator++() {
+    HeuristicEntryDPLL &operator++() {
         this->occurrences++;
         return *this;
     }
@@ -65,15 +58,15 @@ public:
         this->literal = l;
     }
 
-    HeuristicEntry &operator--() {
+    HeuristicEntryDPLL &operator--() {
         if (occurrences != 0)
             this->occurrences--;
         else [[unlikely]]
             std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
         return *this;
     }
-    HeuristicEntry operator--(int) {
-        const HeuristicEntry e = *this;
+    HeuristicEntryDPLL operator--(int) {
+        const HeuristicEntryDPLL e = *this;
         if (occurrences != 0) {
             this->occurrences--;
         }
@@ -83,23 +76,23 @@ public:
         return e;
     }
 
-    friend bool operator==(const HeuristicEntry& lhs, size_t i) {
+    friend bool operator==(const HeuristicEntryDPLL& lhs, size_t i) {
         return lhs.occurrences == i;
     }
 };
 
-class HeuristicsDB {
-    std::vector<HeuristicEntry> vector;
+class HeuristicsDB_DPLL {
+    std::vector<HeuristicEntryDPLL> vector;
     std::vector<Literal> existing_literals;
     size_t size = 0;
 
 public:
-    explicit HeuristicsDB(const size_t size): size(size) {
+    explicit HeuristicsDB_DPLL(const size_t size): size(size) {
         this->vector.resize(2*size+2);
         this->existing_literals.resize(0);
     }
-    explicit HeuristicsDB() = default;
-    HeuristicEntry& operator[](Literal lit) {
+    explicit HeuristicsDB_DPLL() = default;
+    HeuristicEntryDPLL& operator[](Literal lit) {
         if (lit < 0)
             return this->vector[2*std::abs(lit)+1];
         return this->vector[2*lit];
@@ -125,15 +118,15 @@ public:
     }
 };
 class ProblemContext {
-    HeuristicsDB db;
+    HeuristicsDB_DPLL db;
     ClauseSet cs;
 
 public:
-    [[nodiscard]] ProblemContext(const HeuristicsDB &db, const ClauseSet &cs)
+    [[nodiscard]] ProblemContext(const HeuristicsDB_DPLL &db, const ClauseSet &cs)
         : db(db),
           cs(cs) {
     }
-    [[nodiscard]] HeuristicsDB & get_db() {
+    [[nodiscard]] HeuristicsDB_DPLL & get_db() {
         return db;
     }
     [[nodiscard]] ClauseSet & get_cs() {
@@ -152,14 +145,42 @@ void onCtrlC(int sig) {
     exit(1);
 }
 
-void analyse(const Clause& c, HeuristicsDB& db) {
+void analyse(const Clause& c, HeuristicsDB_DPLL& db) {
     for (auto& literal: c) {
         ++db[literal];
         db[literal].set_literal(literal);
         db[-literal].set_literal(-literal);
     }
 }
-[[nodiscard]] ClauseSet read_clauses(const char *file, HeuristicsDB& db) {
+int get_lit_total_count(const ClauseSet& c) {
+    int lit_total_count = 0;
+
+    for (const auto& clause : c) {
+        if (clause.empty()) continue;
+
+        int first_abs = std::abs(*clause.begin());
+        int last_abs = std::abs(*clause.rbegin());
+
+        int max_in_clause = std::max(first_abs, last_abs);
+        if (max_in_clause > lit_total_count) {
+            lit_total_count = max_in_clause;
+        }
+    }
+
+    return lit_total_count;
+}
+void build_heuristics_db(const ClauseSet& c, HeuristicsDB_DPLL& db) {
+    int max_lit = get_lit_total_count(c);
+
+    db.resize(max_lit);
+
+    for (const auto& clause : c) {
+        analyse(clause, db);
+    }
+
+    db.poppulate_literal_record();
+}
+[[nodiscard]] ClauseSet read_clauses(const char *file) {
     std::ifstream f(file);
     f.tie(nullptr);
     size_t clause_count=0, lit_total_count=0;
@@ -176,7 +197,6 @@ void analyse(const Clause& c, HeuristicsDB& db) {
             line = line.substr(strlen("p cnf "));
             std::istringstream is(line);
             is>>lit_total_count>>clause_count;
-            db.resize(lit_total_count);
             continue;
         }
 
@@ -187,27 +207,18 @@ void analyse(const Clause& c, HeuristicsDB& db) {
             if (lit == 0) break;
             c.emplace(lit);
         }
-        analyse(c,db);
         clauses.emplace(c);
     }
-    db.poppulate_literal_record();
     f.close();
     return clauses;
 }
 
-enum class SatState {
-    SAT,
-    UNSAT,
-    UNKNOWN
-};
-
-
-void process_clause_removal(HeuristicsDB &db, const std::set<long>& clause) {
+void process_clause_removal(HeuristicsDB_DPLL &db, const Clause& clause) {
     for (auto &c_lit: clause)
         --db[c_lit];
 }
 
-bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, SatState &result, HeuristicsDB& db) {
+bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, SatState &result, HeuristicsDB_DPLL& db) {
     while (!single_literals.empty()) {
         for (const auto& lit: single_literals) {
             auto it = cs.begin();
@@ -250,7 +261,7 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
     return false;
 }
 
-bool single_polarity_rule(ClauseSet &cs, HeuristicsDB &db, std::set<Literal>& single_polarity_literals, SatState &result) {
+bool single_polarity_rule(ClauseSet &cs, HeuristicsDB_DPLL &db, std::set<Literal>& single_polarity_literals, SatState &result) {
     while (!single_polarity_literals.empty()) {
         for (const auto& literal: single_polarity_literals) {
             for (auto it = cs.begin(); it != cs.end(); ++it) {
@@ -310,8 +321,7 @@ Literal pick_literal(ProblemContext & ctx) {
 
     return ctx.get_db().get_record()[distrib(gen)];
 }
-
-SatState davis_putnam_logemann_loveland(const HeuristicsDB &db, const ClauseSet &cs) {
+SatState davis_putnam_logemann_loveland(const HeuristicsDB_DPLL &db, const ClauseSet &cs) {
     SatState result = SatState::UNKNOWN;
     std::stack<ProblemContext> context_stack;
     context_stack.emplace(db,cs);
@@ -345,10 +355,18 @@ SatState davis_putnam_logemann_loveland(const HeuristicsDB &db, const ClauseSet 
     }
     return SatState::UNSAT;
 }
+SatState dpll_rand(ClauseSet clauses) {
+    HeuristicsDB_DPLL db;
+    build_heuristics_db(clauses, db);
+    max_clauses = clauses.size();
+
+    return davis_putnam_logemann_loveland(db, clauses);
+}
+/*
 int main(int argc, const char* argv[]) {
     std::ios::sync_with_stdio(false);
     signal(SIGINT, &onCtrlC);
-    signal(SIGKILL, &onCtrlC);
+    signal(9, &onCtrlC);
     signal(SIGABRT, &onCtrlC);
     signal(SIGTERM, &onCtrlC);
     if (argc != 3) {
@@ -360,16 +378,15 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    HeuristicsDB db;
-
-    ClauseSet clauses = read_clauses(argv[1],db);
+    ClauseSet clauses = read_clauses(argv[1]);
     max_clauses = std::max(max_clauses,clauses.size());
+
     std::ofstream g(argv[2]);
     g<<"S-a citit "<<argv[1]<<'\n';
-    g<<"Start SAT. Resultat: ";
+    g<<"Start SAT. Rezultat: ";
     g.flush();
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = davis_putnam_logemann_loveland(db, clauses);
+    auto result = dpll_rand(clauses);
     auto end = std::chrono::high_resolution_clock::now();
     size_t peakSize    = getPeakRSS( );
     switch (result) {
@@ -395,3 +412,4 @@ int main(int argc, const char* argv[]) {
     g.close();
     return 0;
 }
+*/
