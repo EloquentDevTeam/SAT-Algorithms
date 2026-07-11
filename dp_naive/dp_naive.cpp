@@ -1,7 +1,3 @@
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <set>
 #include <sstream>
 #include <cstdint>
 #include <vector>
@@ -10,102 +6,17 @@
 #include <csignal>
 #include <queue>
 #include <map>
-#include <filesystem>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include "dp_naive.h"
 
 namespace fs = std::filesystem;
 
 #pragma GCC optimize("O3,fast-math,unroll-loops")
 
-using Literal = int64_t;
-using Clause = std::set<Literal>;
-using ClauseSet = std::set<Clause>;
-
 ClauseSet clauses;
 std::size_t max_clauses = 0;
-class HeuristicEntry {
-    Literal literal;
-    size_t occurrences;
-public:
-    explicit HeuristicEntry(Literal l, size_t occurences = 0)
-        : literal(l),
-          occurrences(occurences) {
-    }
-    HeuristicEntry() {
-        literal = 0;
-        occurrences = 0;
-    }
-
-    friend auto operator<=>(const HeuristicEntry &lhs, size_t rhs) {
-        return lhs.occurrences <=> rhs;
-    }
-    HeuristicEntry operator++(int) {
-        HeuristicEntry e( *this);
-        this->occurrences++;
-        return e;
-    }
-    HeuristicEntry &operator++() {
-        this->occurrences++;
-        return *this;
-    }
-
-    [[nodiscard]] Literal get_literal() const {
-        return literal;
-    }
-
-    [[nodiscard]] size_t get_occurrences() const {
-        return occurrences;
-    }
-    void set_literal(const Literal l) {
-        this->literal = l;
-    }
-
-    HeuristicEntry &operator--() {
-        if (occurrences != 0)
-            this->occurrences--;
-        else [[unlikely]]
-            std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
-        return *this;
-    }
-    HeuristicEntry operator--(int) {
-        const HeuristicEntry e = *this;
-        if (occurrences != 0) {
-            this->occurrences--;
-        }
-        else [[unlikely]]
-            std::cerr<<"Decrementare ilegală pentru "<<this->literal<<'\n';
-
-        return e;
-    }
-
-    friend bool operator==(const HeuristicEntry& lhs, size_t i) {
-        return lhs.occurrences == i;
-    }
-};
-class HeuristicsDB {
-    std::vector<HeuristicEntry> vector;
-    size_t size = 0;
-
-public:
-    explicit HeuristicsDB(const size_t size): size(size) {
-        this->vector.resize(2*size+2);
-    }
-    explicit HeuristicsDB() = default;
-    HeuristicEntry& operator[](Literal lit) {
-        if (lit < 0)
-            return this->vector[2*std::abs(lit)+1];
-        return this->vector[2*lit];
-    }
-    auto begin() {
-        return vector.begin();
-    }
-    auto end() {
-        return vector.end();
-    }
-    void resize(const size_t new_size) {
-        this->vector.resize(2*new_size+2);
-        this->size = new_size;
-    }
-};
 
 constexpr std::size_t THRESHOLD = 71000000;
 
@@ -119,18 +30,18 @@ void onCtrlC(int sig) {
     exit(1);
 }
 
-void analyse(const Clause& c, HeuristicsDB& db) {
+void analyse(const Clause& c, HeuristicsDB_DP& db) {
     for (auto& literal: c) {
         ++db[literal];
         db[literal].set_literal(literal);
         db[-literal].set_literal(-literal);
     }
 }
-[[nodiscard]] ClauseSet read_clauses(const char *file, HeuristicsDB& db) {
+[[nodiscard]] ClauseSet read_clauses(const char *file) {
     std::ifstream f(file);
     f.tie(nullptr);
     size_t clause_count=0, lit_total_count=0;
-    ClauseSet clauses;
+    ClauseSet clause_set;
     while (!f.eof()) {
         std::string line;
         std::getline(f,line);
@@ -143,7 +54,6 @@ void analyse(const Clause& c, HeuristicsDB& db) {
             line = line.substr(strlen("p cnf "));
             std::istringstream is(line);
             is>>lit_total_count>>clause_count;
-            db.resize(lit_total_count);
             continue;
         }
 
@@ -154,19 +64,13 @@ void analyse(const Clause& c, HeuristicsDB& db) {
             if (lit == 0) break;
             c.emplace(lit);
         }
-        analyse(c,db);
-        clauses.emplace(c);
+        clause_set.emplace(c);
     }
     f.close();
-    return clauses;
+    return clause_set;
 }
 
-enum class SatState {
-    SAT,
-    UNSAT,
-    UNKNOWN
-};
-bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_polarity_literals, std::set<Literal>& single_literals, SatState& sat_result);
+bool resolution(ClauseSet& cs, HeuristicsDB_DP& hdb, std::set<Literal>& single_polarity_literals, std::set<Literal>& single_literals, SatState& sat_result);
 std::pair<bool,int64_t> can_join(const Clause& c1, const Clause& c2) {
     size_t pairs = 0;
     int64_t lit = 0;
@@ -179,12 +83,12 @@ std::pair<bool,int64_t> can_join(const Clause& c1, const Clause& c2) {
     return {pairs == 1,lit};
 }
 
-void process_clause_removal(HeuristicsDB &db, const std::set<long>& clause) {
+void process_clause_removal(HeuristicsDB_DP &db, const Clause& clause) {
     for (auto &c_lit: clause)
         --db[c_lit];
 }
 
-bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, SatState &result, HeuristicsDB& db) {
+bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, SatState &result, HeuristicsDB_DP& db) {
     while (!single_literals.empty()) {
         for (const auto& lit: single_literals) {
             auto it = cs.begin();
@@ -199,7 +103,7 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
                         return true;
                     }
                     //std::cerr<<"Șterg clauza prin literal pur\n";
-                    process_clause_removal(db, clause);
+                    process_clause_removal(db,clause);
                     it = next;
                     continue;
                 }
@@ -227,7 +131,7 @@ bool one_literal_clause_rule(ClauseSet &cs, std::set<Literal>& single_literals, 
     return false;
 }
 
-bool single_polarity_rule(ClauseSet &cs, HeuristicsDB &db, std::set<Literal>& single_polarity_literals, SatState &result) {
+bool single_polarity_rule(ClauseSet &cs, HeuristicsDB_DP &db, std::set<Literal>& single_polarity_literals, SatState &result) {
     while (!single_polarity_literals.empty()) {
         for (const auto& literal: single_polarity_literals) {
             for (auto it = cs.begin(); it != cs.end(); ++it) {
@@ -259,7 +163,7 @@ bool single_polarity_rule(ClauseSet &cs, HeuristicsDB &db, std::set<Literal>& si
     return false;
 }
 
-SatState davis_putnam(ClauseSet& cs, HeuristicsDB& db) {
+SatState davis_putnam(ClauseSet& cs, HeuristicsDB_DP& db) {
 
     SatState result = SatState::UNKNOWN;
     std::set<Literal> single_polarity_literals;
@@ -294,7 +198,7 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
     c12.erase(-l);
     return c12;
 }
-bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_polarity_literals, std::set<Literal>& single_literals, SatState& sat_result) {
+bool resolution(ClauseSet& cs, HeuristicsDB_DP& hdb, std::set<Literal>& single_polarity_literals, std::set<Literal>& single_literals, SatState& sat_result) {
     bool canMakeNewClause = false;
     do
     {
@@ -352,10 +256,43 @@ bool resolution(ClauseSet& cs, HeuristicsDB& hdb, std::set<Literal>& single_pola
     sat_result = SatState::SAT;
     return true;
 }
+int get_lit_total_count(const ClauseSet& c) {
+    int lit_total_count = 0;
+
+    for (const auto& clause : c) {
+        if (clause.empty()) continue;
+
+        int first_abs = std::abs(*clause.begin());
+        int last_abs = std::abs(*clause.rbegin());
+
+        int max_in_clause = std::max(first_abs, last_abs);
+        if (max_in_clause > lit_total_count) {
+            lit_total_count = max_in_clause;
+        }
+    }
+
+    return lit_total_count;
+}
+void build_heuristics_db(const ClauseSet& c, HeuristicsDB_DP& db) {
+    int max_lit = get_lit_total_count(c);
+    db.resize(max_lit);
+
+    for (const auto& clause : c) {
+        analyse(clause, db);
+    }
+}
+SatState dp(ClauseSet c) {
+    HeuristicsDB_DP db;
+    build_heuristics_db(c, db);
+    max_clauses = clauses.size();
+
+    return davis_putnam(c, db);
+}
+/*
 int main(int argc, const char* argv[]) {
     std::ios::sync_with_stdio(false);
     signal(SIGINT, &onCtrlC);
-    signal(SIGKILL, &onCtrlC);
+    signal(9, &onCtrlC);
     signal(SIGABRT, &onCtrlC);
     signal(SIGTERM, &onCtrlC);
     if (argc != 3) {
@@ -367,16 +304,14 @@ int main(int argc, const char* argv[]) {
         return 1;
     }
 
-    HeuristicsDB db;
-
-    clauses = read_clauses(argv[1],db);
+    clauses = read_clauses(argv[1]);
     max_clauses = std::max(max_clauses,clauses.size());
     std::ofstream g(argv[2]);
     g<<"S-a citit "<<argv[1]<<'\n';
     g<<"Start SAT. Resultat: ";
     g.flush();
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = davis_putnam(clauses,db);
+    auto result = dp(clauses);
     auto end = std::chrono::high_resolution_clock::now();
     size_t peakSize    = getPeakRSS( );
     switch (result) {
@@ -402,3 +337,4 @@ int main(int argc, const char* argv[]) {
     g.close();
     return 0;
 }
+*/

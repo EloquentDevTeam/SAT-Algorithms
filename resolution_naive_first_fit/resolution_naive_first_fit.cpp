@@ -1,27 +1,20 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <set>
 #include <sstream>
 #include <cstdint>
 #include <vector>
 #include <chrono>
 #include <memutils.h>
 #include <csignal>
-#include <filesystem>
+#include "resolution_naive_first_fit.h"
 
 #pragma GCC optimize("O3,fast-math,unroll-loops")
-
-
-using Literal = int64_t;
-using Clause = std::set<Literal>;
-using ClauseSet = std::set<Clause>;
 
 ClauseSet clauses;
 
 constexpr std::size_t THRESHOLD = 71000000;
 namespace fs = std::filesystem;
-
 
 void onCtrlC(int sig) {
     std::cerr<<"Programul a primit semnalul "<<sig<<"\n Rezultat: UNKNOWN.\n Nr. de clauze totale: "<<clauses.size()<<'\n';
@@ -63,13 +56,6 @@ void onCtrlC(int sig) {
     f.close();
     return clauses;
 }
-
-enum class SatState {
-    SAT,
-    UNSAT,
-    UNKNOWN
-};
-
 std::pair<bool,int64_t> can_join(const Clause& c1, const Clause& c2) {
     size_t pairs = 0;
     int64_t lit = 0;
@@ -124,10 +110,14 @@ Clause join(const Clause& c1, const Clause& c2, const Literal l) {
     while (canMakeNewClause);
     return SatState::SAT;
 }
+SatState res(ClauseSet c) {
+    return resolution(c);
+}
+/*
 int main(int argc, const char* argv[]) {
     std::ios::sync_with_stdio(false);
     signal(SIGINT, &onCtrlC);
-    signal(SIGKILL, &onCtrlC);
+    signal(9, &onCtrlC);
     signal(SIGABRT, &onCtrlC);
     signal(SIGTERM, &onCtrlC);
     if (argc != 3) {
@@ -143,7 +133,7 @@ int main(int argc, const char* argv[]) {
     g<<"Start SAT. Result: ";
     g.flush();
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = resolution(clauses);
+    auto result = res(clauses);
     auto end = std::chrono::high_resolution_clock::now();
     size_t peakSize    = getPeakRSS( );
     switch (result) {
@@ -168,3 +158,4 @@ int main(int argc, const char* argv[]) {
     g.close();
     return 0;
 }
+*/
